@@ -1,0 +1,2 @@
+addRandom 5
+executeScript script-4.txt

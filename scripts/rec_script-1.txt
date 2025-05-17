@@ -1,0 +1,3 @@
+AddRandom 2
+executeScript scripts/rec_script-2.txt
+info
