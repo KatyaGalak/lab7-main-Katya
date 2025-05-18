@@ -14,7 +14,7 @@ public class SharedConsoleServer extends StandartConsole {
     private final NetworkServer network;
     private static final Logger logger = Logger.getLogger(SharedConsoleServer.class.getName());
     private InetSocketAddress clientAddress;
-    private final BlockingQueue<ServerRequest> responseQueue = new LinkedBlockingQueue<>();
+    //private BlockingQueue<ServerRequest> requestQueue;
 
     public SharedConsoleServer(NetworkServer network) {
         this.network = network;
@@ -25,16 +25,31 @@ public class SharedConsoleServer extends StandartConsole {
         logger.info("Set client address: " + address);
     }
 
-    public void offerResponse(ServerRequest request) {
-        if (request != null && request.getRequest() != null && 
-            request.getClientAddress() != null && clientAddress.equals(request.getClientAddress()) &&
-            (request.getRequest().getMark() == Mark.INPUT_RESPONCE || 
-             request.getRequest().getMark() == Mark.WAIT_NEXT)) {
-            responseQueue.offer(request);
-            logger.info("Added to responseQueue: " + request.getRequest() + " from " + request.getClientAddress());
-        } else {
-            logger.warning("Invalid request for responseQueue: " + (request != null && request.getRequest() != null ? request.getRequest() : "null"));
+    public void offerRequest(ServerRequest request) {
+        if (request == null || request.getRequest() == null) 
+            return;
+
+        if (request.getRequest().getMark() == null || 
+                    (request.getRequest().getMark() != Mark.INPUT_RESPONCE && request.getRequest().getMark() != Mark.WAIT_NEXT)) {
+            
+            logger.warning("[SHARED CONSOLE] Invalid mark for requestQueue: " + request.getRequest().toString());
+            return;
         }
+
+        if (request.getClientAddress() == null) {
+            logger.warning("[SHARED CONSOLE] Invalid clientAddress for request: " + request.getRequest().toString());
+            return;
+        }
+
+        Server.getClientRequestQueue(request.getClientAddress()).offer(request); // положили нужному клиенту
+        
+        // if (clientAddress.equals()) {
+            
+        //     Server.getClientRequestQueue(clientAddress).offer(request);
+        //     logger.info("Added to responseQueue: " + request.getRequest() + " from " + request.getClientAddress());
+        // } else {
+        //     logger.warning("Invalid request for responseQueue: " + (request != null && request.getRequest() != null ? request.getRequest() : "null"));
+        // }
     }
 
     @Override
@@ -67,15 +82,15 @@ public class SharedConsoleServer extends StandartConsole {
             while (System.currentTimeMillis() - startTime < timeoutMillis) {
                 try {
                     logger.info("Polling responseQueue for WAIT_NEXT from client: " + clientAddress);
-                    ServerRequest request = responseQueue.poll(100, TimeUnit.MILLISECONDS);
-                    if (request == null) {
-                        logger.info("No request in queue, checking network.receive() for client: " + clientAddress);
-                        request = network.receive();
-                        if (request != null && request.getClientAddress().equals(clientAddress)) {
-                            offerResponse(request); /// queue!
-                            request = responseQueue.poll();
-                        }
-                    }
+                    ServerRequest request = Server.getClientRequestQueue(clientAddress).poll(100, TimeUnit.MILLISECONDS);
+                    // if (request == null) {
+                    //     logger.info("No request in queue, checking network.receive() for client: " + clientAddress);
+                    //     request = network.receive();
+                    //     if (request != null && request.getClientAddress().equals(clientAddress)) {
+                    //         offerRequest(request); /// queue!
+                    //         request = Server.getClientRequestQueue(clientAddress).poll();
+                    //     }
+                    // }
                     if (request != null && request.getRequest() != null) {
                         logger.info("Received request in writeln: " + request.getRequest() + " from " + request.getClientAddress());
                         if (request.getClientAddress().equals(clientAddress) && 
@@ -114,15 +129,15 @@ public class SharedConsoleServer extends StandartConsole {
             while (System.currentTimeMillis() - startTime < timeoutMillis) {
                 try {
                     logger.info("Polling responseQueue for WAIT_NEXT from client: " + clientAddress);
-                    ServerRequest request = responseQueue.poll(100, TimeUnit.MILLISECONDS);
-                    if (request == null) {
-                        logger.info("No request in queue, checking network.receive() for client: " + clientAddress);
-                        request = network.receive();
-                        if (request != null && request.getClientAddress().equals(clientAddress)) {
-                            offerResponse(request);
-                            request = responseQueue.poll();
-                        }
-                    }
+                    ServerRequest request = Server.getClientRequestQueue(clientAddress).poll(100, TimeUnit.MILLISECONDS);
+                    // if (request == null) {
+                    //     logger.info("No request in queue, checking network.receive() for client: " + clientAddress);
+                    //     request = network.receive();
+                    //     if (request != null && request.getClientAddress().equals(clientAddress)) {
+                    //         offerResponse(request);
+                    //         request = responseQueue.poll();
+                    //     }
+                    // }
                     if (request != null && request.getRequest() != null) {
                         logger.info("Received request in writeln: " + request.getRequest() + " from " + request.getClientAddress());
                         if (request.getClientAddress().equals(clientAddress) && 
@@ -162,15 +177,15 @@ public class SharedConsoleServer extends StandartConsole {
         while (System.currentTimeMillis() - startTime < timeoutMillis) {
             try {
                 logger.info("Polling responseQueue for INPUT_RESPONCE from client: " + clientAddress);
-                ServerRequest request = responseQueue.poll(100, TimeUnit.MILLISECONDS);
-                if (request == null) {
-                    logger.info("No request in queue, checking network.receive() for client: " + clientAddress);
-                    request = network.receive();
-                    if (request != null && request.getClientAddress().equals(clientAddress)) {
-                        offerResponse(request);
-                        request = responseQueue.poll();
-                    }
-                }
+                ServerRequest request = Server.getClientRequestQueue(clientAddress).poll(100, TimeUnit.MILLISECONDS);
+                // if (request == null) {
+                //     logger.info("No request in queue, checking network.receive() for client: " + clientAddress);
+                //     request = network.receive();
+                //     if (request != null && request.getClientAddress().equals(clientAddress)) {
+                //         offerRequest(request);
+                //         request = responseQueue.poll();
+                //     }
+                // }
                 if (request != null && request.getRequest() != null) {
                     logger.info("Received request in read: " + request.getRequest() + " from " + request.getClientAddress());
                     if (request.getClientAddress().equals(clientAddress) && 

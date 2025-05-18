@@ -45,7 +45,11 @@ public class Show extends Command {
             return new Response("Collection is empty");
 
         Integer start = 0;
-        try {logger.info("[SHOW ARGS] " +request.getArgs().get(0));} catch (Exception e) {logger.info("[SHOW ARGS] null agrs list");}
+
+        
+        try {logger.info("[SHOW ARGS] " + request.getArgs().get(0));} catch (Exception e) {logger.info("[SHOW ARGS] null agrs list");}
+
+
         if (request.getMark() == Mark.WAIT_NEXT && !(request.getArgs() == null || request.getArgs().isEmpty())) {
             try {
                 start = Integer.parseInt(request.getArgs().get(0));
@@ -72,7 +76,7 @@ public class Show extends Command {
         // }while
         response.setCommand("show");
         response.setMessage((end).toString());
-        logger.info("[ASKING]"+Thread.currentThread().getName()+" aks user for continue reading colleciton");
+        logger.info("[ASKING]" + Thread.currentThread().getName() + " aks user for continue reading colleciton");
         if (end < collectionSize) {
             Boolean continueShow = new ClientRequest<Boolean>(console).askBoolean("Answer to continue", "TRUE of FALSE",
                 x -> (x != null && x.equalsIgnoreCase("TRUE") 

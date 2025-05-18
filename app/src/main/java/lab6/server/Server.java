@@ -3,12 +3,17 @@ package lab6.server;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+
 import lab6.shared.io.connection.Response;
 import lab6.shared.io.connection.Mark;
 
@@ -17,10 +22,19 @@ public class Server {
     private static final Logger logger = Logger.getLogger(Server.class.getName());
     private ExecutorService readThreadPool;
     private NetworkServer server;
-    private final Map<InetSocketAddress, SharedConsoleServer> clientConsoles = new ConcurrentHashMap<>();
+
+    private final Map<InetSocketAddress, SharedConsoleServer> clientConsoles = new ConcurrentHashMap<>(); // client - console
+
+    private final static ConcurrentHashMap<InetSocketAddress, BlockingQueue<ServerRequest> > clientRequestQueues = new ConcurrentHashMap<>(); // очередь для request, которые пришли не туда
+
+    private final Set<InetSocketAddress> activeClients = ConcurrentHashMap.newKeySet(); // храним активных клиентов
 
     public Server() {
         readThreadPool = Executors.newFixedThreadPool(NUM_READ_THREAD_POOL);
+    }
+
+    public static synchronized BlockingQueue<ServerRequest> getClientRequestQueue(InetSocketAddress clientAddress) {
+        return clientRequestQueues.computeIfAbsent(clientAddress, k -> new LinkedBlockingQueue<>());
     }
 
     public void shutdown() {
@@ -34,7 +48,11 @@ public class Server {
             readThreadPool.shutdownNow();
             Thread.currentThread().interrupt();
         }
+
         server.shutdown();
+
+        clientRequestQueues.clear();
+        activeClients.clear();
         clientConsoles.clear(); // Очистка консолей при завершении
     }
 
@@ -58,27 +76,53 @@ public class Server {
                         }
 
                         InetSocketAddress clientAddress = request.getClientAddress();
-                        logger.info("[THREAD] Received request: " + request.getRequest() + " from " + clientAddress+" "+Thread.currentThread().getName());
+                        
+                        synchronized (activeClients) {
+                            if (activeClients.contains(clientAddress)) {
+                                clientRequestQueues.computeIfAbsent(clientAddress, k -> new LinkedBlockingQueue<>()).add(request);
+                                continue;
+                            }
+                            
+
+                            activeClients.add(clientAddress);
+                        }
+
+                        SharedConsoleServer console;
+
+                        synchronized (clientConsoles) {
+                            // Получаем или создаём консоль для клиента
+                            console = clientConsoles.computeIfAbsent(clientAddress, addr -> {
+                                SharedConsoleServer newConsole = new SharedConsoleServer(server);
+                                newConsole.setClientAddress(addr);
+                                logger.info("Created new console for client: " + addr);
+                                return newConsole;
+                            });
+                        }
+
+                        synchronized (clientRequestQueues) { // создает очередь для клиента
+                            clientRequestQueues.put(clientAddress, new LinkedBlockingQueue<>());
+                        }
+                        
+                        
+                        logger.info("[THREAD] Received request: " + request.getRequest() + " from " + clientAddress + " " + Thread.currentThread().getName());
 
                         // set обрабатываемых клиентов
 
-                        // Получаем или создаём консоль для клиента
-                        // SharedConsoleServer console = clientConsoles.computeIfAbsent(clientAddress, addr -> {
-                        //     SharedConsoleServer newConsole = new SharedConsoleServer(server);
-                        //     newConsole.setClientAddress(addr);
-                        //     logger.info("Created new console for client: " + addr);
-                        //     return newConsole;
-                        // });
-                        logger.info("[THREAD] choosing thread console " +console.toString()+ " "+Thread.currentThread().getName());
+                        
+                        logger.info("[THREAD] choosing thread console " + console.toString()+ " " + Thread.currentThread().getName());
 
                         // Помещаем INPUT_RESPONCE и WAIT_NEXT в очередь консоли
                         // console.offerResponse(request);
+
+                        
 
                         // Пропускаем маршрутизацию для INPUT_RESPONCE и WAIT_NEXT
                         if (request.getRequest().getMark() != null && 
                             (request.getRequest().getMark().equals(Mark.INPUT_RESPONCE) || 
                              request.getRequest().getMark().equals(Mark.WAIT_NEXT))) {
-                            console.offerResponse(request); // ????
+
+                            console.offerRequest(request); // ????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! должно ли вообще это быть здесь
+                            
                             logger.info("Skipping routing for " + request.getRequest().getMark() + " from " + clientAddress);
                             continue;
                         }
@@ -99,6 +143,18 @@ public class Server {
                                 }
                             } catch (Exception e) {
                                 logger.log(Level.SEVERE, "Error processing request: " + request.getRequest(), e);
+                            } finally {
+                                synchronized (clientRequestQueues) {
+                                    clientRequestQueues.remove(clientAddress);
+                                }
+
+                                synchronized (activeClients) {
+                                    activeClients.remove(clientAddress);
+                                }
+
+                                synchronized (clientConsoles) {
+                                    clientConsoles.remove(clientAddress);
+                                }
                             }
                         }).start();
                     } catch (Exception e) {
