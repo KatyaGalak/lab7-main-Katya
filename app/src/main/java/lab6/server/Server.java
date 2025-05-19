@@ -193,41 +193,38 @@ public class Server {
                                         
 
                                         logger.info("[CHECK INTERACTIVE COMMAND] DELETE INTERACTIVE COMMAND?");
-                                        if (isInteractiveCommand && response.getMessage() != null &&
-                                            (response.getMessage().equals("Show completed") ||
-                                             response.getMessage().equals("Show terminated by client") ||
-                                             response.getMessage().equals("Collection is empty"))) {
+                                        if (isInteractiveCommand && response.getMessage() != null && response.getMark() == Mark.COMPLETED_SHOW) {
                                                 logger.info("[CHECK INTERACTIVE COMMAND] IN IF");
                                                 completeInteractive(clientAddress);
                                         } else {
                                             logger.info("[!!!!!SERVER DELETE CLIENT]" + clientAddress);
 
-                                            // synchronized (clientRequestQueues) {
-                                            //     clientRequestQueues.remove(clientAddress);
-                                            // }
-
-                                            // synchronized (activeClients) {
-                                            //     activeClients.remove(clientAddress);
-                                            // }
-
-                                            // synchronized (clientConsoles) {
-                                            //     clientConsoles.remove(clientAddress);
-                                            // }
-
-                                            synchronized (interactiveClients) {
-                                                if (!interactiveClients.contains(clientAddress) && !isInteractiveCommand) {
-                                                    synchronized (clientRequestQueues) {
-                                                        clientRequestQueues.remove(clientAddress);
-                                                    }
-                                                    synchronized (activeClients) {
-                                                        activeClients.remove(clientAddress);
-                                                    }
-                                                    synchronized (clientConsoles) {
-                                                        clientConsoles.remove(clientAddress);
-                                                    }
-                                                    logger.info("Removed client: " + clientAddress);
-                                                }
+                                            synchronized (clientRequestQueues) {
+                                                clientRequestQueues.remove(clientAddress);
                                             }
+
+                                            synchronized (activeClients) {
+                                                activeClients.remove(clientAddress);
+                                            }
+
+                                            synchronized (clientConsoles) {
+                                                clientConsoles.remove(clientAddress);
+                                            }
+
+                                            // synchronized (interactiveClients) {
+                                            //     if (!interactiveClients.contains(clientAddress) && !isInteractiveCommand) {
+                                            //         synchronized (clientRequestQueues) {
+                                            //             clientRequestQueues.remove(clientAddress);
+                                            //         }
+                                            //         synchronized (activeClients) {
+                                            //             activeClients.remove(clientAddress);
+                                            //         }
+                                            //         synchronized (clientConsoles) {
+                                            //             clientConsoles.remove(clientAddress);
+                                            //         }
+                                            //         logger.info("Removed client: " + clientAddress);
+                                            //     }
+                                            // }
                                         }
 
                                         

@@ -108,6 +108,7 @@ public class Handler implements Runnable {
             // printConsole(response);
             switch (response.getMark()) {
                 case COMPLETED_SHOW:
+                    //console.writeln(response.getMessage());
                     return;
                 case WAIT_NEXT:
                     console.writeln("Received WAIT_NEXT, continuing with start index: " + response.getList_index());
@@ -117,7 +118,6 @@ public class Handler implements Runnable {
                     String input = console.read();
                     console.writeln("Sending INPUT_RESPONCE: " + input + " for command: " + request.getCommand());
                     handle(new Request(Mark.INPUT_RESPONCE, request.getCommand(), Arrays.asList(input), request.getUserCredentials()));
-                    console.writeln("Sent INPUT_RESPONCE, waiting for server response");
                     return;
                     // handle(new Request(Mark.INPUT_RESPONCE, request.getCommand(), Arrays.asList(console.read()), request.getUserCredentials()));
                     // break;
@@ -129,9 +129,13 @@ public class Handler implements Runnable {
         }
 
         if (request.getCommand().equals("show") && response.getTickets() != null) {
-            //console.writeln("DEBUG: Continuing show command, expecting COMPLETED_SHOW");
+            console.writeln("??????????????????DEBUG: Continuing show command, expecting COMPLETED_SHOW");
             //handle(new Request(Mark.WAIT_NEXT, request.getCommand(), Arrays.asList(request.getList_index().toString()), request.getUserCredentials()));
-            handle(new Request(request.getCommand(), Collections.emptyList(), request.getUserCredentials()));
+            //handle(new Request(request.getCommand(), Collections.emptyList(), request.getUserCredentials()));
+            Response finalResponse = ((SharedConsoleClient) console).getClient().sendRecive(null);
+            console.writeln("Get dop response!!!!!!!!!!!!!!");
+            if (finalResponse != null)
+                printConsole(finalResponse);
             return;
         }
 

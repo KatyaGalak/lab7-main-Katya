@@ -85,15 +85,23 @@ public class Show extends Command {
             logger.info("[SHOW] Received answer: " + continueShow + " from client: " + console.getClientAddress());
 
             if (continueShow == null || !continueShow) {
-                //server.completeInteractive(console.getClientAddress());
-                return new Response(Mark.COMPLETED_SHOW,"Show terminated by client");
+                Response finalResponse = new Response(Mark.COMPLETED_SHOW, "Show terminated by client");
+                //finalResponse.setList_index(end);
+                //console.writeln(finalResponse, false);
+               // server.completeInteractive(console.getClientAddress());
+                return finalResponse;
             }
 
             // Рекурсивно вызываем execute для следующего сегмента
             return execute(new Request(Mark.WAIT_NEXT, "show", Arrays.asList(String.valueOf(end)), request.getUserCredentials()), console);
         } else {
+            Response finalResponse = new Response(Mark.COMPLETED_SHOW, "Show completed");
+            //finalResponse.setList_index(end);
+           // console.writeln(finalResponse, false);
             //server.completeInteractive(console.getClientAddress());
-            return new Response(Mark.COMPLETED_SHOW,"Show completed");
+            return finalResponse;
+            //server.completeInteractive(console.getClientAddress());
+            //return new Response(Mark.COMPLETED_SHOW,"Show completed");
         }
 
         // if (CollectionManager.getInstance().getTicketCollection().isEmpty()) {
