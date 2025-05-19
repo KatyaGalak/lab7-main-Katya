@@ -33,6 +33,6 @@ public class ServerRequest {
 
     @Override
     public String toString() {
-        return request.toString() +" "+ clientAddress.toString();
+        return request.toString() + " " + clientAddress.toString();
     } 
 }
