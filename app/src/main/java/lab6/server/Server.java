@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 
 
 import lab6.shared.io.connection.Response;
+import lab6.server.system.collection.CollectionManager;
 import lab6.shared.io.connection.Mark;
 
 public class Server {
@@ -23,14 +24,22 @@ public class Server {
     private ExecutorService readThreadPool;
     private NetworkServer server;
 
+    private static Server instance;
+
     private final Map<InetSocketAddress, SharedConsoleServer> clientConsoles = new ConcurrentHashMap<>(); // client - console
 
     private final static ConcurrentHashMap<InetSocketAddress, BlockingQueue<ServerRequest> > clientRequestQueues = new ConcurrentHashMap<>(); // очередь для request, которые пришли не туда
 
     private final Set<InetSocketAddress> activeClients = ConcurrentHashMap.newKeySet(); // храним активных клиентов
 
-    public Server() {
+    private final Set<InetSocketAddress> interactiveClients = ConcurrentHashMap.newKeySet(); // Для интерактивных команд
+
+    private Server() {
         readThreadPool = Executors.newFixedThreadPool(NUM_READ_THREAD_POOL);
+    }
+
+    public static synchronized Server getInstance() { 
+        return instance == null ? instance = new Server() : instance;
     }
 
     public static synchronized BlockingQueue<ServerRequest> getClientRequestQueue(InetSocketAddress clientAddress) {
@@ -54,6 +63,23 @@ public class Server {
         clientRequestQueues.clear();
         activeClients.clear();
         clientConsoles.clear(); // Очистка консолей при завершении
+        interactiveClients.clear();
+    }
+
+    public void completeInteractive(InetSocketAddress clientAddress) {
+        synchronized (interactiveClients) {
+            interactiveClients.remove(clientAddress);
+            synchronized (clientRequestQueues) {
+                clientRequestQueues.remove(clientAddress);
+            }
+            synchronized (activeClients) {
+                activeClients.remove(clientAddress);
+            }
+            synchronized (clientConsoles) {
+                clientConsoles.remove(clientAddress);
+            }
+            logger.info("[FINISH INTERACTIVE COMMAND] Completed interactive mode for client: " + clientAddress);
+        }
     }
 
     public void run() {
@@ -76,10 +102,25 @@ public class Server {
                         }
 
                         InetSocketAddress clientAddress = request.getClientAddress();
+                        logger.info("[THREAD] Received request: " + request.getRequest() + " from " + clientAddress + " " + Thread.currentThread().getName());
+
+                        // проверка на интерактивность запроса
+                        boolean isInteractiveRequest = request.getRequest().getMark() != null &&
+                            (request.getRequest().getMark().equals(Mark.INPUT_RESPONCE) ||
+                             request.getRequest().getMark().equals(Mark.WAIT_NEXT));
                         
                         synchronized (activeClients) {
                             if (activeClients.contains(clientAddress)) {
-                                clientRequestQueues.computeIfAbsent(clientAddress, k -> new LinkedBlockingQueue<>()).add(request);
+
+                                if (isInteractiveRequest) {
+                                    SharedConsoleServer interactiveConsole = clientConsoles.get(clientAddress);
+
+                                    if (interactiveConsole != null) {
+                                        clientRequestQueues.computeIfAbsent(clientAddress, k -> new LinkedBlockingQueue<>()).add(request);
+                                    }
+                                }
+
+                                
                                 continue;
                             }
                             
@@ -131,7 +172,7 @@ public class Server {
                         new Thread(() -> {
                             logger.info("Routing request: " + request.getRequest() + " in thread: " + Thread.currentThread().getName());
                             try {
-                                Router router = new Router(console);
+                                Router router = new Router(console, this);
                                 Response response = router.route(request.getRequest());
                                 logger.info("Response routed and done: " + response);
                                 if (response != null) {
@@ -144,16 +185,33 @@ public class Server {
                             } catch (Exception e) {
                                 logger.log(Level.SEVERE, "Error processing request: " + request.getRequest(), e);
                             } finally {
-                                synchronized (clientRequestQueues) {
-                                    clientRequestQueues.remove(clientAddress);
-                                }
+                                logger.info("[!!!!!SERVER DELETE CLIENT]" + clientAddress);
 
-                                synchronized (activeClients) {
-                                    activeClients.remove(clientAddress);
-                                }
+                                // synchronized (clientRequestQueues) {
+                                //     clientRequestQueues.remove(clientAddress);
+                                // }
 
-                                synchronized (clientConsoles) {
-                                    clientConsoles.remove(clientAddress);
+                                // synchronized (activeClients) {
+                                //     activeClients.remove(clientAddress);
+                                // }
+
+                                // synchronized (clientConsoles) {
+                                //     clientConsoles.remove(clientAddress);
+                                // }
+
+                                synchronized (interactiveClients) {
+                                    if (!interactiveClients.contains(clientAddress)) {
+                                        synchronized (clientRequestQueues) {
+                                            clientRequestQueues.remove(clientAddress);
+                                        }
+                                        synchronized (activeClients) {
+                                            activeClients.remove(clientAddress);
+                                        }
+                                        synchronized (clientConsoles) {
+                                            clientConsoles.remove(clientAddress);
+                                        }
+                                        logger.info("Removed client: " + clientAddress);
+                                    }
                                 }
                             }
                         }).start();

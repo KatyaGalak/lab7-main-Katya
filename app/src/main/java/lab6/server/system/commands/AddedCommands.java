@@ -2,6 +2,8 @@ package lab6.server.system.commands;
 
 import java.util.List;
 
+import lab6.server.Server;
+
 /**
  * A utility class that holds a list of all added command instances.
  * This class provides a method to retrieve the list of commands that can be executed.
@@ -22,7 +24,7 @@ public final class AddedCommands {
         new RemoveById(),
         new RemoveGreater(),
         // new Save(),
-        new Show(),
+        new Show(Server.getInstance()),
         new UpdateById(),
         new ExecuteScript(),
         new AddRandom()

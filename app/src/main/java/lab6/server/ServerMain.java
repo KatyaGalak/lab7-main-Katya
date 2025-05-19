@@ -7,7 +7,7 @@ public class ServerMain {
         StandartConsole stdConsole = new StandartConsole();
 
         try {
-            Server server = new Server();
+            Server server = Server.getInstance();
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 server.shutdown();

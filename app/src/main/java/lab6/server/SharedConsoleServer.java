@@ -5,6 +5,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import lombok.Getter;
+
 import lab6.shared.io.connection.Mark;
 import lab6.shared.io.connection.Response;
 import lab6.shared.io.console.StandartConsole;
@@ -13,6 +15,8 @@ import lab6.shared.io.connection.Request;
 public class SharedConsoleServer extends StandartConsole {
     private final NetworkServer network;
     private static final Logger logger = Logger.getLogger(SharedConsoleServer.class.getName());
+
+    @Getter
     private InetSocketAddress clientAddress;
     //private BlockingQueue<ServerRequest> requestQueue;
 
