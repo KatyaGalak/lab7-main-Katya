@@ -4,6 +4,7 @@ public enum Mark {
     INPUT_REQUEST,
     INPUT_RESPONCE,
     WAIT_NEXT,
+    COMPLETED_SHOW,
     SHOW_PART,
     ERROR
 }

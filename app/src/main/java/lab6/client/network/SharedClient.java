@@ -18,7 +18,7 @@ import lab6.shared.io.console.StandartConsole;
 public class SharedClient extends StandartConsole {
     private static final String SERVER_IP = "192.168.10.80";
     private static final int SERVER_PORT = 2223;
-    private static final int TIMEOUT = 10000; // было 6000
+    private static final int TIMEOUT = 15000; // было 6000
     private static final int MAX_ATTEMPTS = 3;
 
     private DatagramSocket socket;
@@ -53,6 +53,8 @@ public class SharedClient extends StandartConsole {
                     DatagramPacket responsePacket = new DatagramPacket(buffer, buffer.length);
                     socket.receive(responsePacket);
                     // writeln("    # Responce recieved");
+
+                    //writeln("DEBUG: Response packet received from " + responsePacket.getAddress() + ":" + responsePacket.getPort());
 
                     ByteArrayInputStream byteInput = new ByteArrayInputStream(responsePacket.getData(), 0,
                             responsePacket.getLength());

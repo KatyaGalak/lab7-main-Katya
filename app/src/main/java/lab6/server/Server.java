@@ -67,6 +67,7 @@ public class Server {
     }
 
     public void completeInteractive(InetSocketAddress clientAddress) {
+        logger.info("[CHECK INTERACTIVE COMMAND] IN COMPLETE INTERACTIVE");
         synchronized (interactiveClients) {
             interactiveClients.remove(clientAddress);
             synchronized (clientRequestQueues) {
@@ -158,14 +159,22 @@ public class Server {
                         
 
                         // Пропускаем маршрутизацию для INPUT_RESPONCE и WAIT_NEXT
-                        if (request.getRequest().getMark() != null && 
-                            (request.getRequest().getMark().equals(Mark.INPUT_RESPONCE) || 
-                             request.getRequest().getMark().equals(Mark.WAIT_NEXT))) {
+                        // if (request.getRequest().getMark() != null && 
+                        //     (request.getRequest().getMark().equals(Mark.INPUT_RESPONCE) || 
+                        //      request.getRequest().getMark().equals(Mark.WAIT_NEXT))) {
 
-                            console.offerRequest(request); // ????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! должно ли вообще это быть здесь
+                        //     console.offerRequest(request); // ????!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! должно ли вообще это быть здесь
                             
-                            logger.info("Skipping routing for " + request.getRequest().getMark() + " from " + clientAddress);
-                            continue;
+                        //     logger.info("Skipping routing for " + request.getRequest().getMark() + " from " + clientAddress);
+                        //     continue;
+                        // }
+
+                        boolean isInteractiveCommand = request.getRequest().getCommand().equals("show");
+                        if (isInteractiveCommand) {
+                            synchronized (interactiveClients) {
+                                interactiveClients.add(clientAddress);
+                                logger.info("Started interactive mode for client: " + clientAddress);
+                            }
                         }
 
                         // Создаём новый поток для обработки запроса
@@ -180,39 +189,81 @@ public class Server {
                                     new Thread(() -> {
                                         logger.info("Sending response: " + response + " to " + clientAddress);
                                         server.send(response, clientAddress);
+
+                                        
+
+                                        logger.info("[CHECK INTERACTIVE COMMAND] DELETE INTERACTIVE COMMAND?");
+                                        if (isInteractiveCommand && response.getMessage() != null &&
+                                            (response.getMessage().equals("Show completed") ||
+                                             response.getMessage().equals("Show terminated by client") ||
+                                             response.getMessage().equals("Collection is empty"))) {
+                                                logger.info("[CHECK INTERACTIVE COMMAND] IN IF");
+                                                completeInteractive(clientAddress);
+                                        } else {
+                                            logger.info("[!!!!!SERVER DELETE CLIENT]" + clientAddress);
+
+                                            // synchronized (clientRequestQueues) {
+                                            //     clientRequestQueues.remove(clientAddress);
+                                            // }
+
+                                            // synchronized (activeClients) {
+                                            //     activeClients.remove(clientAddress);
+                                            // }
+
+                                            // synchronized (clientConsoles) {
+                                            //     clientConsoles.remove(clientAddress);
+                                            // }
+
+                                            synchronized (interactiveClients) {
+                                                if (!interactiveClients.contains(clientAddress) && !isInteractiveCommand) {
+                                                    synchronized (clientRequestQueues) {
+                                                        clientRequestQueues.remove(clientAddress);
+                                                    }
+                                                    synchronized (activeClients) {
+                                                        activeClients.remove(clientAddress);
+                                                    }
+                                                    synchronized (clientConsoles) {
+                                                        clientConsoles.remove(clientAddress);
+                                                    }
+                                                    logger.info("Removed client: " + clientAddress);
+                                                }
+                                            }
+                                        }
+
+                                        
                                     }).start();
                                 }
                             } catch (Exception e) {
                                 logger.log(Level.SEVERE, "Error processing request: " + request.getRequest(), e);
                             } finally {
-                                logger.info("[!!!!!SERVER DELETE CLIENT]" + clientAddress);
+                                // logger.info("[!!!!!SERVER DELETE CLIENT]" + clientAddress);
 
-                                // synchronized (clientRequestQueues) {
-                                //     clientRequestQueues.remove(clientAddress);
+                                // // synchronized (clientRequestQueues) {
+                                // //     clientRequestQueues.remove(clientAddress);
+                                // // }
+
+                                // // synchronized (activeClients) {
+                                // //     activeClients.remove(clientAddress);
+                                // // }
+
+                                // // synchronized (clientConsoles) {
+                                // //     clientConsoles.remove(clientAddress);
+                                // // }
+
+                                // synchronized (interactiveClients) {
+                                //     if (!interactiveClients.contains(clientAddress) && !isInteractiveCommand) {
+                                //         synchronized (clientRequestQueues) {
+                                //             clientRequestQueues.remove(clientAddress);
+                                //         }
+                                //         synchronized (activeClients) {
+                                //             activeClients.remove(clientAddress);
+                                //         }
+                                //         synchronized (clientConsoles) {
+                                //             clientConsoles.remove(clientAddress);
+                                //         }
+                                //         logger.info("Removed client: " + clientAddress);
+                                //     }
                                 // }
-
-                                // synchronized (activeClients) {
-                                //     activeClients.remove(clientAddress);
-                                // }
-
-                                // synchronized (clientConsoles) {
-                                //     clientConsoles.remove(clientAddress);
-                                // }
-
-                                synchronized (interactiveClients) {
-                                    if (!interactiveClients.contains(clientAddress)) {
-                                        synchronized (clientRequestQueues) {
-                                            clientRequestQueues.remove(clientAddress);
-                                        }
-                                        synchronized (activeClients) {
-                                            activeClients.remove(clientAddress);
-                                        }
-                                        synchronized (clientConsoles) {
-                                            clientConsoles.remove(clientAddress);
-                                        }
-                                        logger.info("Removed client: " + clientAddress);
-                                    }
-                                }
                             }
                         }).start();
                     } catch (Exception e) {

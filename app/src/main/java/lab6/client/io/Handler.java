@@ -68,8 +68,6 @@ public class Handler implements Runnable {
             return;
         }
 
-
-
         // Обработка скриптов
         if (response.getMessage() != null && response.getMessage().contains("ScriptExecute")) {
             String scriptPathString = response.getMessage().substring("ScriptExecute".length() + 1).trim();
@@ -100,34 +98,48 @@ public class Handler implements Runnable {
             }
         }
         // console.writeln(response.toString());
+
         printConsole(response);
+
         // Обработка марки запроса ввода
         if (response.getMark() != null) {
             //console.writeln("Find MARK!!!!!!!!!!");
             // console.writeln(request.getArgs().toString());
             // printConsole(response);
             switch (response.getMark()) {
-
+                case COMPLETED_SHOW:
+                    return;
                 case WAIT_NEXT:
-                    console.writeln("Received WAIT_NEXT, continuing with start index: " + response.getMessage());
+                    console.writeln("Received WAIT_NEXT, continuing with start index: " + response.getList_index());
                     handle(new Request(Mark.WAIT_NEXT, request.getCommand(), Arrays.asList(response.getList_index().toString()), request.getUserCredentials()));
-                    break;
+                    return;
                 case INPUT_REQUEST:
                     String input = console.read();
                     console.writeln("Sending INPUT_RESPONCE: " + input + " for command: " + request.getCommand());
                     handle(new Request(Mark.INPUT_RESPONCE, request.getCommand(), Arrays.asList(input), request.getUserCredentials()));
                     console.writeln("Sent INPUT_RESPONCE, waiting for server response");
-                    break;
+                    return;
                     // handle(new Request(Mark.INPUT_RESPONCE, request.getCommand(), Arrays.asList(console.read()), request.getUserCredentials()));
                     // break;
+                
                 default:
-                    break;
+                    //console.writeln("DEBUG: Unknown mark: " + response.getMark());
+                    return;
             }
+        }
+
+        if (request.getCommand().equals("show") && response.getTickets() != null) {
+            //console.writeln("DEBUG: Continuing show command, expecting COMPLETED_SHOW");
+            //handle(new Request(Mark.WAIT_NEXT, request.getCommand(), Arrays.asList(request.getList_index().toString()), request.getUserCredentials()));
+            handle(new Request(request.getCommand(), Collections.emptyList(), request.getUserCredentials()));
+            return;
         }
 
         if (response.getMessage() != null && response.getMessage().contains("Command Exit")) {
             System.exit(0);
         }
+
+        console.writeln("DEBUG: Exiting handle for request: " + request);
     }
 
     private String askStringUser(String name, String limitations, Predicate<String> predicate) {
@@ -186,7 +198,8 @@ public class Handler implements Runnable {
 
     private UserCredentials startUser() {
         return
-            switch (console.read("  # Hello! if you want to register, enter 'registration'. If you already have an account, enter 'login'.")) {
+            switch (console.read("  # Hello! if you want to register, enter 'registration'. If you already have an account, enter 'login'.")
+                            .toLowerCase()) {
                 case "registration" -> registration();
                 case "login" -> login();
                 default -> UserCredentials.getEmptyUserCredentials();

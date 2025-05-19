@@ -85,7 +85,7 @@ public class SharedConsoleServer extends StandartConsole {
 
             while (System.currentTimeMillis() - startTime < timeoutMillis) {
                 try {
-                    logger.info("Polling responseQueue for WAIT_NEXT from client: " + clientAddress);
+                    //logger.info("Polling responseQueue for WAIT_NEXT from client: " + clientAddress);
                     ServerRequest request = Server.getClientRequestQueue(clientAddress).poll(100, TimeUnit.MILLISECONDS);
                     // if (request == null) {
                     //     logger.info("No request in queue, checking network.receive() for client: " + clientAddress);
@@ -132,7 +132,7 @@ public class SharedConsoleServer extends StandartConsole {
 
             while (System.currentTimeMillis() - startTime < timeoutMillis) {
                 try {
-                    logger.info("Polling responseQueue for WAIT_NEXT from client: " + clientAddress);
+                    //logger.info("Polling responseQueue for WAIT_NEXT from client: " + clientAddress);
                     ServerRequest request = Server.getClientRequestQueue(clientAddress).poll(100, TimeUnit.MILLISECONDS);
                     // if (request == null) {
                     //     logger.info("No request in queue, checking network.receive() for client: " + clientAddress);
@@ -180,7 +180,7 @@ public class SharedConsoleServer extends StandartConsole {
 
         while (System.currentTimeMillis() - startTime < timeoutMillis) {
             try {
-                logger.info("Polling responseQueue for INPUT_RESPONCE from client: " + clientAddress);
+                //logger.info("Polling responseQueue for INPUT_RESPONCE from client: " + clientAddress);
                 ServerRequest request = Server.getClientRequestQueue(clientAddress).poll(100, TimeUnit.MILLISECONDS);
                 // if (request == null) {
                 //     logger.info("No request in queue, checking network.receive() for client: " + clientAddress);

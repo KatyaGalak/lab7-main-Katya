@@ -64,7 +64,7 @@ public class Response implements Serializable {
      * @param message the response message
      */
     public Response(String message) {
-        this.message=message;
+        this.message = message;
     }
 
 
@@ -73,7 +73,7 @@ public class Response implements Serializable {
         this.message = message;
     }
 
-    public Response(Mark mark, String command,String message, List<Ticket> tickets) {
+    public Response(Mark mark, String command, String message, List<Ticket> tickets) {
         this(message, tickets);
         this.mark = mark;
     }
