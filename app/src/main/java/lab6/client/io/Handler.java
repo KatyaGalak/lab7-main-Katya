@@ -32,7 +32,6 @@ public class Handler implements Runnable {
     public Request parse(String data, UserCredentials userCredentials) {
         if (data == null)
             return null;
-        // inp_split = input.strip().split("\\s+");
 
         String[] parts = data.strip().split("\\s+", 2);
         String nameCommand = parts[0].strip();
@@ -43,10 +42,6 @@ public class Handler implements Runnable {
     public void printConsole(Response response) {
         if (response == null)
             return;
-        // if (response.getMessage() != null && response.getMark().equals(Mark.INPUT_REQUEST))
-        //     console.writeln(response.());
-            
-            // return;
         if (response.getMessage() != null && !response.getMessage().isBlank() &&
                 (response.getTickets() == null || response.getTickets().size() == 0)) {
             console.writeln(response.getMessage());
@@ -97,30 +92,23 @@ public class Handler implements Runnable {
                 console.writeln("   # IO Error: " + e.getMessage());
             }
         }
-        // console.writeln(response.toString());
 
         printConsole(response);
 
         // Обработка марки запроса ввода
         if (response.getMark() != null) {
-            //console.writeln("Find MARK!!!!!!!!!!");
-            // console.writeln(request.getArgs().toString());
-            // printConsole(response);
             switch (response.getMark()) {
                 case COMPLETED_SHOW:
-                    //console.writeln(response.getMessage());
                     return;
                 case WAIT_NEXT:
-                    console.writeln("Received WAIT_NEXT, continuing with start index: " + response.getList_index());
+                    //console.writeln("Received WAIT_NEXT, continuing with start index: " + response.getList_index());
                     handle(new Request(Mark.WAIT_NEXT, request.getCommand(), Arrays.asList(response.getList_index().toString()), request.getUserCredentials()));
                     return;
                 case INPUT_REQUEST:
                     String input = console.read();
-                    console.writeln("Sending INPUT_RESPONCE: " + input + " for command: " + request.getCommand());
+                    //console.writeln("Sending INPUT_RESPONCE: " + input + " for command: " + request.getCommand());
                     handle(new Request(Mark.INPUT_RESPONCE, request.getCommand(), Arrays.asList(input), request.getUserCredentials()));
                     return;
-                    // handle(new Request(Mark.INPUT_RESPONCE, request.getCommand(), Arrays.asList(console.read()), request.getUserCredentials()));
-                    // break;
                 
                 default:
                     //console.writeln("DEBUG: Unknown mark: " + response.getMark());
@@ -129,11 +117,9 @@ public class Handler implements Runnable {
         }
 
         if (request.getCommand().equals("show") && response.getTickets() != null) {
-            console.writeln("??????????????????DEBUG: Continuing show command, expecting COMPLETED_SHOW");
-            //handle(new Request(Mark.WAIT_NEXT, request.getCommand(), Arrays.asList(request.getList_index().toString()), request.getUserCredentials()));
-            //handle(new Request(request.getCommand(), Collections.emptyList(), request.getUserCredentials()));
+            //console.writeln("DEBUG: Continuing show command, expecting COMPLETED_SHOW");
             Response finalResponse = ((SharedConsoleClient) console).getClient().sendRecive(null);
-            console.writeln("Get dop response!!!!!!!!!!!!!!");
+
             if (finalResponse != null)
                 printConsole(finalResponse);
             return;
@@ -143,7 +129,7 @@ public class Handler implements Runnable {
             System.exit(0);
         }
 
-        console.writeln("DEBUG: Exiting handle for request: " + request);
+        //console.writeln("DEBUG: Exiting handle for request: " + request);
     }
 
     private String askStringUser(String name, String limitations, Predicate<String> predicate) {

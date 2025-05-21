@@ -86,124 +86,14 @@ public class Show extends Command {
 
             if (continueShow == null || !continueShow) {
                 Response finalResponse = new Response(Mark.COMPLETED_SHOW, "Show terminated by client");
-                //finalResponse.setList_index(end);
-                //console.writeln(finalResponse, false);
-               // server.completeInteractive(console.getClientAddress());
                 return finalResponse;
             }
 
-            // Рекурсивно вызываем execute для следующего сегмента
+            // Рекурсивно вызываем execute для следующего кусочка вывода
             return execute(new Request(Mark.WAIT_NEXT, "show", Arrays.asList(String.valueOf(end)), request.getUserCredentials()), console);
-        } else {
-            Response finalResponse = new Response(Mark.COMPLETED_SHOW, "Show completed");
-            //finalResponse.setList_index(end);
-           // console.writeln(finalResponse, false);
-            //server.completeInteractive(console.getClientAddress());
-            return finalResponse;
-            //server.completeInteractive(console.getClientAddress());
-            //return new Response(Mark.COMPLETED_SHOW,"Show completed");
         }
 
-        // if (CollectionManager.getInstance().getTicketCollection().isEmpty()) {
-        //     server.completeInteractive(console.getClientAddress());
-        //     return new Response("Collection is empty");
-        // }
-
-        // Integer start = 0;
-        // if (request.getMark() == Mark.WAIT_NEXT && request.getArgs() != null && !request.getArgs().isEmpty()) {
-        //     try {
-        //         start = Integer.parseInt(request.getArgs().get(0));
-        //         logger.info("[SHOW] Continuing with start=" + start + " for client: " + console.getClientAddress());
-        //     } catch (NumberFormatException e) {
-        //         logger.warning("Invalid start index: " + request.getArgs().get(0) + " for client: " + console.getClientAddress());
-        //         start = 0;
-        //     }
-        // }
-
-        // int collectionSize = CollectionManager.getInstance().getTicketCollection().size();
-
-        // while (start < collectionSize) {
-        //     Integer end = Math.min(start + count, collectionSize);
-        //     logger.info("[SHOW] Processing segment start=" + start + ", end=" + end + " for client: " + console.getClientAddress());
-        //     Response response = new ShowRange().execute(
-        //             new Request("show", Arrays.asList(start.toString(), end.toString()), request.getUserCredentials()),
-        //             console);
-        //     response.setList_index(end);
-        //     response.setCommand("show");
-        //     response.setMessage("Collection items from " + start + " to " + end + ".");
-
-        //     console.writeln(response, (end < collectionSize));
-
-        //     if (end < collectionSize) {
-        //         logger.info("[SHOW] Requesting continuation for client: " + console.getClientAddress());
-        //         Boolean continueShow = new ClientRequest<Boolean>(console).askBoolean(
-        //                 "Answer to continue",
-        //                 "TRUE or FALSE",
-        //                 x -> x != null && (x.equalsIgnoreCase("TRUE") || x.equalsIgnoreCase("FALSE")));
-        //         logger.info("[SHOW] Received answer: " + continueShow + " from client: " + console.getClientAddress());
-
-        //         if (continueShow == null || !continueShow) {
-        //             server.completeInteractive(console.getClientAddress());
-        //             return new Response("Show terminated by client");
-        //         }
-
-        //         start = end;
-        //     } else {
-        //         server.completeInteractive(console.getClientAddress());
-        //         return new Response("Show completed");
-        //     }
-        // }
-
-        // server.completeInteractive(console.getClientAddress());
-        // return new Response("Show completed");
-
-        // if (CollectionManager.getInstance().getTicketCollection().isEmpty())
-        //     return new Response("Collection is empty");
-
-        // Integer start = 0;
-
-        
-        // try {logger.info("[SHOW ARGS] " + request.getArgs().get(0));} catch (Exception e) {logger.info("[SHOW ARGS] null agrs list");}
-
-
-        // if (request.getMark() == Mark.WAIT_NEXT && !(request.getArgs() == null || request.getArgs().isEmpty())) {
-        //     try {
-        //         start = Integer.parseInt(request.getArgs().get(0));
-        //         logger.info("[START SHOW] " + start);
-        //     } catch (Exception e) {
-        //         start = 0;
-        //     }
-
-        // }
-        // Integer end = start + count;
-
-        // int collectionSize = CollectionManager.getInstance().getTicketCollection().size();
-
-        // // do {
-        // Response response = new ShowRange().execute(
-        //         new Request("show", Arrays.asList(start.toString(), end.toString()), request.getUserCredentials()),
-        //         console);
-        // // response.setMark(Mark.WAIT_NEXT);
-        // response.setList_index(end);
-        // console.writeln(response, (end < collectionSize)); //!!!!!!!!
-
-        // //console.writeln(response);
-
-        // // }while
-        // response.setCommand("show");
-        // response.setMessage((end).toString());
-        // logger.info("[ASKING]" + Thread.currentThread().getName() + " aks user for continue reading colleciton");
-        // if (end < collectionSize) {
-        //     Boolean continueShow = new ClientRequest<Boolean>(console).askBoolean("Answer to continue", "TRUE of FALSE",
-        //         x -> (x != null && x.equalsIgnoreCase("TRUE") 
-        //         || (x != null && x.equalsIgnoreCase("FALSE"))));
-        //     logger.info("[ASKING] answer recived");
-        //     if (continueShow != null && continueShow){
-        //         response.setMark(Mark.WAIT_NEXT);
-        //         logger.info("Set mark to continue reading "+response.toString());
-        //         return response;
-        //     }
-        // }
-        // return Response.empty();
+        Response finalResponse = new Response(Mark.COMPLETED_SHOW, "Show completed");
+        return finalResponse;
     }
 }

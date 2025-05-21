@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
 
 import lab6.shared.ticket.Ticket;
 import lab6.shared.ticket.TicketType;
-import lab6.server.Router;
 import lab6.shared.ticket.Color;
 import lab6.shared.ticket.Coordinates;
 import lab6.shared.ticket.Person;
@@ -270,7 +269,7 @@ public class DatabaseManagerTicket {
     }
 
     public boolean deleteByUser(long userID) {
-        logger.info("[DELETE BY USER (DATABASE)]" + userID);
+        logger.info("[DELETE BY USER (DATABASE)] " + userID);
         try (Connection conn = DatabaseManager.getInstance().getConnection()) {
             conn.setAutoCommit(false);
 
@@ -313,7 +312,6 @@ public class DatabaseManagerTicket {
                 try (PreparedStatement stmt = conn.prepareStatement(ADD_TICKET)) {
                     stmt.setString(1, ticket.getName());
                     stmt.setInt(2, coordinatesID);
-                    //stmt.setObject(3, ticket.getCreationDate());
 
                     stmt.setObject(3, ticket.getInstalledPrice() ? ticket.getPrice() : null, java.sql.Types.DOUBLE);
                     stmt.setObject(4, ticket.getInstalledRefundable() ? ticket.getRefundable() : null, java.sql.Types.BOOLEAN);
@@ -346,22 +344,3 @@ public class DatabaseManagerTicket {
     }
 }
 
-    // public void deleteByUser(long user_id) {
-    //     try {
-    //         try (Connection conn = DatabaseManager.getInstance().getConnection()) {
-    //             //conn.setAutoCommit(false);
-
-    //             try (PreparedStatement insertStmt = DatabaseManager.getInstance().
-    //                                                                 prepareStatement(ADD_USER, conn, userCredentials.username(), 
-    //                                                                 userCredentials.passwordHash())
-    //                 ) {
-    //                     insertStmt.executeUpdate();
-    //                     //conn.commit();
-    //                     return true;
-    //             }
-    //         }
-    //     } catch (SQLException e) {
-    //         //conn.rollback();
-    //         return false;
-    //     }
-    // }
