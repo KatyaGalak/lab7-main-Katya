@@ -31,7 +31,7 @@ public class NetworkServer {
         } catch (Exception e) {
             logger.warning(e.getMessage());
         }
-        logger.info("Server started on port " + PORT + " + "+Thread.currentThread().getName());
+        logger.info("Server started on port " + PORT + " + " + Thread.currentThread().getName());
     }
 
     public synchronized ServerRequest receive() {
@@ -60,7 +60,8 @@ public class NetworkServer {
             ByteArrayInputStream byteInput = new ByteArrayInputStream(requestData);
             ObjectInputStream objectInput = new ObjectInputStream(byteInput);
             request.setRequest((Request) objectInput.readObject());
-            if (request != null) {
+
+            if (request != null && request.getRequest() != null) {
                 logger.info("[PROCESSING] Input request deserialized: " + request.toString());
                 logger.info("[PROCESSING] Executing request: " + request.toString());
             }

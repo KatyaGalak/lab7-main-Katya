@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -18,6 +19,8 @@ import lab6.shared.io.connection.Mark;
 
 public class Server {
     private static final int NUM_READ_THREAD_POOL = 5;
+    private static final int MAX_PROCESSING_THREADS = 100;
+    private static final int MAX_SENDING_THREADS = 100;
     private static final Logger logger = Logger.getLogger(Server.class.getName());
     private ExecutorService readThreadPool;
     private NetworkServer server;
@@ -31,6 +34,9 @@ public class Server {
     private final Set<InetSocketAddress> activeClients = ConcurrentHashMap.newKeySet(); // храним активных клиентов
 
     private final Set<InetSocketAddress> interactiveClients = ConcurrentHashMap.newKeySet(); // Для интерактивных команд
+
+    private static final Semaphore processingSemaphore = new Semaphore(MAX_PROCESSING_THREADS);
+    private static final Semaphore sendingSemaphore = new Semaphore(MAX_SENDING_THREADS);
 
     private Server() {
         readThreadPool = Executors.newFixedThreadPool(NUM_READ_THREAD_POOL);
@@ -153,48 +159,64 @@ public class Server {
                                 logger.info("Started interactive mode for client: " + clientAddress);
                             }
                         }
+                        
+                        try {
+                            // Создаём новый поток для обработки запроса
+                            logger.info("[SERVER SEMAPHORE] Available processing permits: " + processingSemaphore.availablePermits());
+                            processingSemaphore.acquire();
+                            new Thread(() -> {
+                                logger.info("[SERVER] Routing request: " + request.getRequest() + " in thread: " + Thread.currentThread().getName());
+                                try {
+                                    Router router = new Router(console, this);
+                                    Response response = router.route(request.getRequest());
+                                    logger.info("[SERVER] Response routed and done: " + response);
+                                    if (response != null) {
+                                        logger.info("[SERVER SEMAPHORE] Available sending permits: " + sendingSemaphore.availablePermits());
+                                        sendingSemaphore.acquire();
 
-                        // Создаём новый поток для обработки запроса
-                        new Thread(() -> {
-                            logger.info("[SERVER] Routing request: " + request.getRequest() + " in thread: " + Thread.currentThread().getName());
-                            try {
-                                Router router = new Router(console, this);
-                                Response response = router.route(request.getRequest());
-                                logger.info("[SERVER] Response routed and done: " + response);
-                                if (response != null) {
-                                    // Создаём новый поток для отправки ответа
-                                    new Thread(() -> {
-                                        logger.info("[SERVER] Sending response: " + response + " to " + clientAddress);
-                                        server.send(response, clientAddress);
+                                        // Создаём новый поток для отправки ответа
+                                        new Thread(() -> {
+                                            try {
+                                                logger.info("[SERVER] Sending response: " + response + " to " + clientAddress);
+                                                server.send(response, clientAddress);
 
-                                        
-                                        logger.info("[CHECK INTERACTIVE COMMAND] DELETE INTERACTIVE COMMAND");
-                                        if (isInteractiveCommand && response.getMessage() != null && response.getMark() == Mark.COMPLETED_SHOW) {
-                                                //logger.info("[CHECK INTERACTIVE COMMAND] IN IF");
-                                                completeInteractive(clientAddress);
-                                        } else {
-                                            logger.info("[SERVER] SERVER DELETE CLIENT" + clientAddress);
+                                                
+                                                logger.info("[CHECK INTERACTIVE COMMAND] DELETE INTERACTIVE COMMAND");
+                                                if (!isInteractiveCommand) {
+                                                    logger.info("[SERVER] SERVER DELETE CLIENT" + clientAddress);
 
-                                            synchronized (clientRequestQueues) {
-                                                clientRequestQueues.remove(clientAddress);
+                                                    synchronized (clientRequestQueues) {
+                                                        clientRequestQueues.remove(clientAddress);
+                                                    }
+
+                                                    synchronized (activeClients) {
+                                                        activeClients.remove(clientAddress);
+                                                    }
+
+                                                    synchronized (clientConsoles) {
+                                                        clientConsoles.remove(clientAddress);
+                                                    }
+                                                } else if (isInteractiveCommand && response.getMessage() != null && response.getMark() == Mark.COMPLETED_SHOW) {
+                                                        //logger.info("[CHECK INTERACTIVE COMMAND] IN IF");
+                                                        completeInteractive(clientAddress);
+                                                }
+                                            } finally {
+                                                sendingSemaphore.release();
                                             }
 
-                                            synchronized (activeClients) {
-                                                activeClients.remove(clientAddress);
-                                            }
-
-                                            synchronized (clientConsoles) {
-                                                clientConsoles.remove(clientAddress);
-                                            }
-                                        }
-
-                                        
-                                    }).start();
+                                            
+                                        }).start();
+                                    }
+                                } catch (Exception e) {
+                                    logger.log(Level.SEVERE, "Error processing request: " + request.getRequest(), e);
+                                } finally {
+                                    processingSemaphore.release();
                                 }
-                            } catch (Exception e) {
-                                logger.log(Level.SEVERE, "Error processing request: " + request.getRequest(), e);
-                            }
-                        }).start();
+                            }).start();
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            logger.severe("Interrupted while acquiring processing semaphore");
+                        }
                     } catch (Exception e) {
                         if (!Thread.currentThread().isInterrupted()) {
                             logger.log(Level.SEVERE, "Request receiving error in thread: " + Thread.currentThread().getName(), e);
